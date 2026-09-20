@@ -1,5 +1,5 @@
 import unittest
-from math_func import add
+from math_function import add
 
 class TestMath(unittest.TestCase):
     def test_add(self):
@@ -8,3 +8,4 @@ class TestMath(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+    
