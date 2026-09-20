@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Список подписчиков</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Подписчики</h1>
+    {% if subscribers %}
+        <ul>
+            {% for s in subscribers %}
+                <li>{{ s }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Подписчиков пока нет.</p>
+    {% endif %}
+    <p><a href="{{ url_for('main') }}">На главную</a></p>
+</body>
+</html>

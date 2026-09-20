@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конвертер валют</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Конвертер валют 💱</h1>
+        
+        <div>
+            <label>Сумма:</label>
+            <input type="number" id="amount" placeholder="Введите сумму" step="any">
+            
+            <label>Из валюты:</label>
+            <select id="from_currency"></select>
+            
+            <label>В валюту:</label>
+            <select id="to_currency"></select>
+            
+            <button onclick="convert()">Конвертировать</button>
+        </div>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        // Загрузка списка валют
+        async function loadCurrencies() {
+            try {
+                const response = await fetch('/currencies');
+                const currencies = await response.json();
+                
+                const fromSelect = document.getElementById('from_currency');
+                const toSelect = document.getElementById('to_currency');
+                
+                currencies.forEach(currency => {
+                    fromSelect.add(new Option(currency, currency));
+                    toSelect.add(new Option(currency, currency));
+                });
+                
+                // Значения по умолчанию
+                fromSelect.value = "USD";
+                toSelect.value = "EUR";
+            } catch (error) {
+                console.error("Ошибка загрузки валют:", error);
+            }
+        }
+        
+        // Конвертация
+        async function convert() {
+            const amount = document.getElementById('amount').value;
+            const fromCurrency = document.getElementById('from_currency').value;
+            const toCurrency = document.getElementById('to_currency').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!amount || amount <= 0) {
+                resultDiv.innerHTML = '<div class="error">❌ Введите корректную сумму</div>';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('amount', amount);
+            formData.append('from_currency', fromCurrency);
+            formData.append('to_currency', toCurrency);
+            
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        ✅ ${data.amount} ${data.from} = 
+                        <span style="color: #28a745;">${data.converted} ${data.to}</span>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ Ошибка соединения</div>';
+            }
+        }
+        
+        // Загружаем список валют при загрузке страницы
+        loadCurrencies();
+    </script>
+</body>
+</html>

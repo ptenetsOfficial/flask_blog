@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: flask_blog
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+
+      - blog_data:/app
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+
+      - EMAIL_USER:${EMAIL_USER}
+      - EMAIL_PASSWORD:${EMAIL_PASSWORD}
+    env_file:
+      - .env
+
+volumes:
+  blog_data:

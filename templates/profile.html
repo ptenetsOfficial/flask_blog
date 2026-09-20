@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <h1>Профиль</h1>
+    <h3>Добро пожаловать!</h3>
+    <p>Имя: {{ user[1] }}</p>
+    <div class="avatar-container">
+        <img id="avatar-preview" src="{{ url_for('user_avatar') }}" alt="Аватар"
+            style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
+    </div>
+
+    <div class="upload-section">
+        <label for="avatar-input" class="custom-button">Выбрать новую аватарку</label>
+        <input type="file" id="avatar-input" accept="image/*" style="display: none;">
+    </div>
+
+    <p>Email: {{ user[2] }}</p>
+    <p><strong>Последний вход:</strong> {{ user[4] if user[4] else 'Нет данных' }}</p>
+    <a href="{{ url_for('add_post') }}"><button>Новый пост</button></a>
+    <a href="/">На главную</a>
+
+    <script>
+        const avatarInput = document.getElementById('avatar-input');
+        const avatarPreview = document.getElementById('avatar-preview');
+
+        avatarInput.addEventListener('change', async function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const previewUrl = URL.createObjectURL(file);
+            avatarPreview.src = previewUrl;
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            try {
+                const response = await fetch('/profile/upload-avatar', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('Аватар успешно обновлен!');
+                } else {
+                    alert('Ошибка при сохранении на сервере.');
+                }
+            } catch (error) {
+                console.error('Ошибка сети:', error);
+                alert('Не удалось связаться с сервером.');
+            } finally {
+                URL.revokeObjectURL(previewUrl);
+            }
+        });
+    </script>
+</body>
+
+</html>

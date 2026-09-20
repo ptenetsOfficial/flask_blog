@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Главная страница</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="header">
+        <h1>Главная</h1>
+        <div class="auth-section">
+            {% if user_name %}
+            <p>Вы вошли как: <strong>{{ user_name }}</strong></p>
+            <a href="/logout">Выйти</a>
+            {% else %}
+            <a href="{{ url_for('register') }}">регистрация</a>
+            <a href="{{ url_for('login') }}">Вход</a>
+            {% endif %}
+
+        </div>
+    </div>
+
+    {% if user_name %}
+    <div class="user-actions">
+        <a href="{{ url_for('add_post') }}"><button>новый пост</button></a>
+    </div>
+    {% endif %}
+
+
+    <form method="GET" action="/" class="search-form">
+        <div>
+            <label for="q">Поиск:</label>
+            <input type="text" id="q" name="q" value="{{ active_filters.q }}" placeholder="Текст в посте">
+        </div>
+        <div>
+            <label for="category">Категория:</label>
+            <select id="category" name="category">
+                <option value="">Все категории</option>
+                {% for category in categories %}
+                <option value="{{ category }}" {% if category==active_filters.category %}selected{% endif %}>{{ category
+                    }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="author">Автор:</label>
+            <input type="text" id="author" name="author" value="{{ active_filters.author }}" placeholder="Имя автора">
+        </div>
+        <div>
+            <label for="date_from">Дата от:</label>
+            <input type="date" id="date_from" name="date_from" value="{{ active_filters.date_from }}">
+        </div>
+        <div>
+            <label for="date_to">Дата до:</label>
+            <input type="date" id="date_to" name="date_to" value="{{ active_filters.date_to }}">
+        </div>
+        <button type="submit">Найти</button>
+    </form>
+
+    {% if user_name %}
+    <div class="search-history">
+        <h3>История поиска</h3>
+        {% if search_history %}
+        <ul>
+            {% for item in search_history %}
+            <li>
+                <a
+                    href="/?q={{ item[0] }}&category={{ item[1] }}&author={{ item[2] }}&date_from={{ item[3] }}&date_to={{ item[4] }}">
+                    {{ item[0] or 'любой текст' }} | {{ item[1] or 'любая категория' }} | {{ item[2] or 'любой автор' }}
+                    | {{ item[3] or '—' }} - {{ item[4] or '—' }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>Пока нет истории поиска.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <h3>Все пользователи:</h3>
+    {% if users %}
+    <ul>
+        {% for user in users %}
+        <li>
+            <a href="{{ url_for('user_page', user_id=user[0]) }}">
+                {{ user[1] }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Пользователей пока нет. <a href="{{ url_for('register') }}">Зарегистрируйтесь первым!</a></p>
+    {% endif %}
+
+    <div id="posts-container">
+        <!-- Посты будут загружаться сюда через AJAX -->
+        <ul>
+            {% for post in posts %}
+            <li>
+                <h3>{{ post.title }}</h3>
+                <p>{{ post.content[:200] }}{% if post.content|length > 200 %}...{% endif %}</p>
+                <p>
+                    <img src="{{ url_for('public_user_avatar', user_id=post.user_id) }}"
+                        alt="Аватар автора" width="40" height="40"
+                        style="border-radius: 50%; object-fit: cover; vertical-align: middle;">
+                    <em>
+                    Автор: {{ post.author_name }} |
+                        Категория: <a href="/category/{{ post.category_id }}">{{ post.category_name if post.category_name else 'Без категории' }}</a> |
+                        Создан: {{ post.created_at }}</em></p>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+
+    <div id="pagination">
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if current_page > 1 %}
+            <a href="/?page={{ current_page - 1 }}">Предыдущая</a>
+            {% endif %}
+
+            <span>Страница {{ current_page }} из {{ total_pages }}</span>
+
+            {% if current_page < total_pages %} <a href="/?page={{ current_page + 1 }}">Следующая</a>
+                {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+
+</body>
+
+<script>
+    // Функция для загрузки постов через AJAX
+    function loadPosts(page = 1) {
+        // Показываем индикатор загрузки
+        document.getElementById('posts-container').innerHTML = '<p>Загрузка...</p>';
+        // Отправляем AJAX-запрос
+        fetch(`/api/posts?page=${page}`)
+            .then(response => response.json())
+            .then(data => {
+                // Очищаем контейнер
+                const container = document.getElementById('posts-container');
+                container.innerHTML = '';
+                // Создаем список
+                const ul = document.createElement('ul');
+                // Добавляем посты
+                data.posts.forEach(post => {
+                    const postElement = document.createElement('li');
+                    postElement.innerHTML = `
+                <h3>${post.title}</h3>
+                <p>${post.content}</p>
+                <p><em>Автор: ${post.author} | 
+                    Категория: <a href="/category/${post.category_id}">${post.category}</a> | 
+                    Создан: ${post.created_at}</em></p>
+            `;
+                    ul.appendChild(postElement);
+                });
+                container.appendChild(ul);
+                // Обновляем пагинацию
+                updatePagination(data.page, data.total_pages);
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки постов:', error);
+                document.getElementById('posts-container').innerHTML = '<p>Ошибка загрузки постов</p>';
+            });
+    }
+
+    // Функция для обновления пагинации
+    function updatePagination(currentPage, totalPages) {
+        const pagination = document.getElementById('pagination');
+        if (!pagination) return;
+        let html = '';
+        if (currentPage > 1) {
+            html += `<a href="#" onclick="loadPosts(${currentPage - 1}); return false;">Предыдущая</a> `;
+        }
+        html += `<span>Страница ${currentPage} из ${totalPages}</span>`;
+        if (currentPage < totalPages) {
+            html += ` <a href="#" onclick="loadPosts(${currentPage + 1}); return false;">Следующая</a>`;
+        }
+        pagination.innerHTML = html;
+        // Обновляем URL в браузере без перезагрузки страницы
+        const newUrl = window.location.pathname + `?page=${currentPage}`;
+        window.history.pushState({ page: currentPage }, '', newUrl);
+    }
+
+
+    // Обработчик кнопок назад/вперед в браузере
+    window.addEventListener('popstate', function (event) {
+        if (event.state && event.state.page) {
+            loadPosts(event.state.page);
+        }
+    });
+
+    // Загружаем посты при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function () {
+        // Проверяем, есть ли параметр page в URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page') || 1;
+        // Если есть кэшированные данные на сервере, используем AJAX
+        if (parseInt(page) > 1) {
+            loadPosts(page);
+        }
+    });
+</script>
+
+
+</html>

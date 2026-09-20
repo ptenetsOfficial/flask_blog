@@ -1,0 +1,13 @@
+# Local secrets
+.env
+
+# Runtime data
+users.db
+*.db
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local workspace metadata
+.gigacode/
