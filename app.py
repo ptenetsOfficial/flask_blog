@@ -829,9 +829,6 @@ def api_posts():
 
 
 
-privet=10
-poka=20
-zdraste = privet + poka
 
 
 if __name__ == '__main__':
