@@ -12,10 +12,10 @@ jobs:
 
     steps:
     - name: checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
 
     - name: set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
 
@@ -25,4 +25,4 @@ jobs:
         pip install -r requirements.txt pytest
 
     - name: run tests
-      run: pytest -q
+      run: python -m pytest -q
